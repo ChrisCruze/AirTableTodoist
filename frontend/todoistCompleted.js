@@ -614,7 +614,7 @@ export const pullTodoistCompleted = value =>
   updateTodoistOffset(value).then(result => {
     var earliest_date_is_sufficient = todoist_determine_if_result_qualifies_for_earliest_date({
       items: result.items,
-      days_back_required: 2 //30
+      days_back_required: 90
     });
     if (earliest_date_is_sufficient) {
       const transformed_response = todoist_result_flatten(value);
