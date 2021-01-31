@@ -1,11 +1,10 @@
 import { initializeBlock } from "@airtable/blocks/ui";
-import React from "react";
+import React,{useState} from "react";
 import { Button, Box, Text } from "@airtable/blocks/ui";
 
 import { base } from "@airtable/blocks";
 import { pullTodoistCompleted } from "./todoistCompleted";
 import moment from "moment";
-
 import _ from "lodash";
 function regex_number_from_string(input_string) {
   //https://stackoverflow.com/questions/1183903/regex-using-javascript-to-return-just-numbers
@@ -34,6 +33,22 @@ const calculate_from_todoist_fields = ({ field, todoist_completed_tasks }) => {
   return D;
 };
 
+function array_pull_last_date_dict(array, key_name) {
+  return _.max(array, function(D) {
+    return moment(D[key_name]).unix();
+  });
+}
+
+const calculate_last_updated = ({ todoist_completed_tasks }) => {
+  var D = {};
+  D['Last Updated'] = moment(array_pull_last_date_dict(todoist_completed_tasks,'completed_date')['completed_date']).format()
+  return D;
+};
+
+
+
+
+
 const calculated_field_updates = ({ name, fields, todoist_completed_tasks }) => {
   var D = {};
   var filtered_fields = fields.filter(function(D) {
@@ -43,8 +58,21 @@ const calculated_field_updates = ({ name, fields, todoist_completed_tasks }) => 
     var field_result = calculate_from_todoist_fields({ field, todoist_completed_tasks });
     D = Object.assign({}, D, field_result);
   });
+
+
+  try {
+    const last_updated_dict  = calculate_last_updated({todoist_completed_tasks})
+    D = Object.assign({}, D, last_updated_dict);
+
+  }
+  catch (err){
+    console.log({err})
+  }
+
   return D;
 };
+
+
 
 async function updateAirTableHours({ todoist_completed_tasks }) {
   const sub_content_grouped = _.groupBy(todoist_completed_tasks, "sub_project");
@@ -62,15 +90,21 @@ async function updateAirTableHours({ todoist_completed_tasks }) {
 }
 
 const UpdateButton = () => {
+  const [message,setMessage] = useState('Start')
   const onClick = () => {
+    setMessage('Pulling Todoist')
     pullTodoistCompleted([]).then(todoist_completed_tasks => {
+      
+      setMessage('Pulled Todoist Tasks:' + String(todoist_completed_tasks.length))
       console.log({ todoist_completed_tasks });
       updateAirTableHours({ todoist_completed_tasks });
+      setMessage('Completed: ' + String(todoist_completed_tasks.length))
+
     });
   };
   return (
     <Button onClick={onClick} icon="edit">
-      Update
+      {message}
     </Button>
   );
 };
